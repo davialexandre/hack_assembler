@@ -41,21 +41,13 @@ class CInstructionTest extends \PHPUnit_Framework_TestCase
         foreach ($this->dests as $dest) {
             foreach ($this->comps as $comp) {
                 foreach ($this->jmps as $jmp) {
-                    $instruction = new CInstruction($this->getInstructionString($dest, $comp, $jmp));
+                    $instruction_string = \CInstructionBuilder::buildInstructionString($dest, $comp, $jmp);
+                    $instruction = new CInstruction($instruction_string);
                     $this->assertEquals($dest, $instruction->getDest());
                     $this->assertEquals($comp, $instruction->getComp());
                     $this->assertEquals($jmp, $instruction->getJmp());
                 }
             }
         }
-    }
-
-    private function getInstructionString($dest, $comp, $jmp)
-    {
-        $instruction = '';
-        if($dest) $instruction .= "$dest=";
-        $instruction .= $comp;
-        if($jmp) $instruction .= ";$jmp";
-        return $instruction;
     }
 }
