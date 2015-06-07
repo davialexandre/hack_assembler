@@ -1,9 +1,17 @@
 <?php
 namespace HackAssembler\Parser\Instruction;
 
-class AInstruction implements Instruction
+class AInstruction extends Instruction
 {
-    public function getBinaryCode() {
+    protected $address;
 
+    public function getAddress()
+    {
+        return $this->address;
+    }
+    
+    protected function parse()
+    {
+        $this->address = substr($this->instruction, 1);
     }
 }
