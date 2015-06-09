@@ -60,6 +60,17 @@ class BinaryCodeTranslatorTest extends \PHPUnit_Framework_TestCase
         'D|M' => '1010101',
     ];
 
+    /**
+     * @var BinaryCodeTranslator;
+     */
+    private $translator;
+
+    public function setUp()
+    {
+        $symbolTable = $this->getMockBuilder('HackAssembler\Assembler\SymbolTable')->getMock();
+        $this->translator = new BinaryCodeTranslator($symbolTable);
+    }
+
     public function testItCanTranslateCInstructionsToBinaryCode()
     {
         foreach($this->comps as $comp_mnemonic => $comp_binary) {
@@ -68,7 +79,7 @@ class BinaryCodeTranslatorTest extends \PHPUnit_Framework_TestCase
                     $expectedBinaryCode = "111{$comp_binary}{$dest_binary}{$jmp_binary}";
                     $instruction_string = \CInstructionBuilder::buildInstructionString($dest_mnemonic, $comp_mnemonic, $jmp_mnemonic);
                     $instruction = new CInstruction($instruction_string);
-                    $this->assertEquals($expectedBinaryCode, BinaryCodeTranslator::translate($instruction));
+                    $this->assertEquals($expectedBinaryCode, $this->translator->translate($instruction));
                 }
             }
         }
@@ -80,7 +91,35 @@ class BinaryCodeTranslatorTest extends \PHPUnit_Framework_TestCase
             $address = rand(0, 32767);
             $instruction = new AInstruction("@$address");
             $expected_binary_code = "0".str_pad(decbin($address), 15, '0', STR_PAD_LEFT);
-            $this->assertEquals($expected_binary_code, BinaryCodeTranslator::translate($instruction));
+            $this->assertEquals($expected_binary_code, $this->translator->translate($instruction));
         }
+    }
+
+    public function testItCanTranslateAInstructionsWithSymbols()
+    {
+        $symbolInstruction = new AInstruction('@SYMBOL');
+        $loopInstruction = new AInstruction('@LOOP');
+
+        $symbolTable = $this->getMockBuilder('HackAssembler\Assembler\SymbolTable')
+            ->setMethods(['contains', 'getAddress'])
+            ->getMock();
+
+        $symbolTable
+            ->expects($this->any())
+            ->method('contains')
+            ->will($this->returnValue(true));
+
+        $symbolTable->expects($this->any())
+            ->method('getAddress')
+            ->withConsecutive(
+                [$symbolInstruction->getAddress()],
+                [$loopInstruction->getAddress()]
+            )
+            ->willReturnOnConsecutiveCalls(500, 37);
+
+        $translator = new BinaryCodeTranslator($symbolTable);
+
+        $this->assertEquals('0000000111110100', $translator->translate($symbolInstruction));
+        $this->assertEquals('0000000000100101', $translator->translate($loopInstruction));
     }
 }

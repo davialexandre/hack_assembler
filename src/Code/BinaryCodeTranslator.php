@@ -1,13 +1,14 @@
 <?php
 namespace HackAssembler\Code;
 
+use HackAssembler\Assembler\SymbolTable;
 use HackAssembler\Parser\Instruction\AInstruction;
 use HackAssembler\Parser\Instruction\CInstruction;
 use HackAssembler\Parser\Instruction\Instruction;
 
 class BinaryCodeTranslator
 {
-    private static $dests = [
+    private $dests = [
         ''    => '000',
         'M'   => '001',
         'D'   => '010',
@@ -18,7 +19,7 @@ class BinaryCodeTranslator
         'AMD' => '111',
     ];
 
-    private static $jmps = [
+    private $jmps = [
         ''    => '000',
         'JGT' => '001',
         'JEQ' => '010',
@@ -29,7 +30,7 @@ class BinaryCodeTranslator
         'JMP' => '111',
     ];
 
-    private static $comps = [
+    private $comps = [
         '0'   => '0101010',
         '1'   => '0111111',
         '-1'  => '0111010',
@@ -60,28 +61,42 @@ class BinaryCodeTranslator
         'D|M' => '1010101',
     ];
 
-    public static function translate(Instruction $instruction)
+    /**
+     * @var SymbolTable
+     */
+    private $symbolTable;
+
+    public function __construct(SymbolTable $symbolTable)
+    {
+        $this->symbolTable = $symbolTable;
+    }
+
+    public function translate(Instruction $instruction)
     {
         if($instruction instanceof CInstruction) {
-            return self::translateCInstruction($instruction);
+            return $this->translateCInstruction($instruction);
         }
 
         if($instruction instanceof AInstruction) {
-            return self::translateAInstruction($instruction);
+            return $this->translateAInstruction($instruction);
         }
     }
 
-    private static function translateCInstruction(CInstruction $instruction)
+    private function translateCInstruction(CInstruction $instruction)
     {
-        $comp_binary = self::$comps[$instruction->getComp()];
-        $dest_binary = self::$dests[$instruction->getDest()];
-        $jmp_binary = self::$jmps[$instruction->getJmp()];
+        $comp_binary = $this->comps[$instruction->getComp()];
+        $dest_binary = $this->dests[$instruction->getDest()];
+        $jmp_binary = $this->jmps[$instruction->getJmp()];
         return "111{$comp_binary}{$dest_binary}{$jmp_binary}";
     }
 
-    private static function translateAInstruction(AInstruction $instruction)
+    private function translateAInstruction(AInstruction $instruction)
     {
-        $binary_address = decbin($instruction->getAddress());
+        $address = $instruction->getAddress();
+        if($this->symbolTable->contains($address)) {
+            $address = $this->symbolTable->getAddress($address);
+        }
+        $binary_address = decbin($address);
         $binary_address = str_pad($binary_address, 15, '0', STR_PAD_LEFT);
         return "0$binary_address";
     }
