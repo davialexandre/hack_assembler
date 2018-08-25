@@ -61,24 +61,14 @@ class BinaryCodeTranslator
         'D|M' => '1010101',
     ];
 
-    /**
-     * @var SymbolTable
-     */
-    private $symbolTable;
-
-    public function __construct(SymbolTable $symbolTable)
-    {
-        $this->symbolTable = $symbolTable;
-    }
-
-    public function translate(Instruction $instruction)
+    public function translate(Instruction $instruction, SymbolTable $symbolTable)
     {
         if($instruction instanceof CInstruction) {
             return $this->translateCInstruction($instruction);
         }
 
         if($instruction instanceof AInstruction) {
-            return $this->translateAInstruction($instruction);
+            return $this->translateAInstruction($instruction, $symbolTable);
         }
     }
 
@@ -90,11 +80,11 @@ class BinaryCodeTranslator
         return "111{$comp_binary}{$dest_binary}{$jmp_binary}";
     }
 
-    private function translateAInstruction(AInstruction $instruction)
+    private function translateAInstruction(AInstruction $instruction, SymbolTable $symbolTable)
     {
         $address = $instruction->getAddress();
-        if($this->symbolTable->contains($address)) {
-            $address = $this->symbolTable->getAddress($address);
+        if($symbolTable->contains($address)) {
+            $address = $symbolTable->getAddress($address);
         }
         $binary_address = decbin($address);
         $binary_address = str_pad($binary_address, 15, '0', STR_PAD_LEFT);
